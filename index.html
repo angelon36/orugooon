@@ -1,0 +1,322 @@
+# Query: 
+# ContextLines: 1
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Juego de la Oruga</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAeONBrWRL46o2DPZgE5ajcu0pVqW4jXGQ",
+      authDomain: "orugon-8ca43.firebaseapp.com",
+      databaseURL: "https://orugon-8ca43-default-rtdb.firebaseio.com",
+      projectId: "orugon-8ca43",
+      storageBucket: "orugon-8ca43.appspot.com",
+      messagingSenderId: "116457593482",
+      appId: "1:116457593482:web:f319650323f62f5df56b73"
+    };
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    let user = null;
+
+    function loginConGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider)
+        .then(result => {
+          user = result.user;
+          document.getElementById("auth-container").style.display = "none";
+          alert("Bienvenido " + user.displayName);
+        })
+        .catch(error => {
+          console.error("Error al autenticar con Google", error);
+        });
+    }
+
+    // Cuando se loguea el usuario
+    auth.onAuthStateChanged((u) => {
+      if (u) {
+        user = u;
+        document.getElementById("auth-container").style.display = "none";
+      } else {
+        document.getElementById("auth-container").style.display = "flex";
+      }
+    });
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: black;
+      font-family: 'Press Start 2P', cursive;
+      height: 100vh;
+      width: 100vw;
+    }
+    canvas {
+      display: block;
+      margin: 60px auto 0 auto;
+      background-color: rgba(255, 255, 255, 0.1);
+      border: 2px solid white;
+    }
+    .panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      font-size: 12px;
+      z-index: 10;
+    }
+    #logo {
+      width: 80px;
+      height: 80px;
+    }
+    #info {
+      flex-grow: 1;
+      text-align: center;
+    }
+    #pausar {
+      padding: 5px 10px;
+      font-size: 10px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #444;
+      color: white;
+      font-family: 'Press Start 2P', cursive;
+    }
+    .btn-dir {
+      width: 50px;
+      height: 50px;
+      background-color: #222;
+      color: white;
+      font-size: 20px;
+      border: 2px solid white;
+      border-radius: 10px;
+      text-align: center;
+      line-height: 50px;
+      user-select: none;
+    }
+    .controles {
+      position: fixed;
+      bottom: 20px;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 30px;
+      z-index: 10;
+    }
+    .top-pixel {
+      position: fixed;
+      top: 100px;
+      right: 10px;
+      width: 160px;
+      background: rgba(0, 0, 0, 0.8);
+      border: 2px solid white;
+      color: white;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 10px;
+      padding: 10px;
+      box-sizing: border-box;
+      z-index: 5;
+    }
+    .top-pixel h2 {
+      font-size : 12px;
+      text-align: center;
+      margin: 0 0 10px 0;
+    }
+    .top-pixel ol {
+      list-style: decimal;
+      padding-left: 20px;
+      margin: 0;
+    }
+    .top-pixel li {
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+
+    #auth-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: black;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    #auth-container button {
+      padding: 10px;
+      font-size: 14px;
+      margin-top: 20px;
+      cursor: pointer;
+      font-family: 'Press Start 2P', cursive;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="auth-container">
+    <h2>Bienvenido</h2>
+    <button onclick="loginConGoogle()">Iniciar sesión con Google</button>
+  </div>
+
+  <div class="panel">
+    <img id="logo" src="Preview.png" alt="Logo" />
+    <span id="info">Nivel: 1 | Manzanas comidas: 0</span>
+    <button id="pausar">Pausar</button>
+  </div>
+
+  <canvas id="juego" width="280" height="160"></canvas>
+
+  <div class="controles">
+    <div class="btn-dir" id="btn-left">←</div>
+    <div class="btn-dir" id="btn-right">→</div>
+    <div class="btn-dir" id="btn-up">↑</div>
+    <div class="btn-dir" id="btn-down">↓</div>
+  </div>
+
+  <div id="top-puntajes" class="top-pixel">
+    <h2>Top Jugadores</h2>
+    <ol id="lista-top"></ol>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("juego");
+    const ctx = canvas.getContext("2d");
+    const info = document.getElementById("info");
+    const btnPausar = document.getElementById("pausar");
+
+    const TAM = 20;
+    let oruga = [{ x: 100, y: 100 }];
+    let direccion = "derecha";
+    let comida = generarComida();
+    let nivel = 1;
+    let velocidad = 200;
+    let puntos = 0;
+    let pausado = false;
+
+    document.addEventListener("keydown", cambiarDireccion);
+
+    document.getElementById("btn-up").addEventListener("click", () => { if (direccion !== "abajo") direccion = "arriba"; });
+    document.getElementById("btn-down").addEventListener("click", () => { if (direccion !== "arriba") direccion = "abajo"; });
+    document.getElementById("btn-left").addEventListener("click", () => { if (direccion !== "derecha") direccion = "izquierda"; });
+    document.getElementById("btn-right").addEventListener("click", () => { if (direccion !== "izquierda") direccion = "derecha"; });
+
+    btnPausar.addEventListener("click", () => {
+      pausado = !pausado;
+      btnPausar.textContent = pausado ? "Reanudar" : "Pausar";
+    });
+
+    function cambiarDireccion(e) {
+      if (e.key === "ArrowUp" && direccion !== "abajo") direccion = "arriba";
+      if (e.key === "ArrowDown" && direccion !== "arriba") direccion = "abajo";
+      if (e.key === "ArrowLeft" && direccion !== "derecha") direccion = "izquierda";
+      if (e.key === "ArrowRight" && direccion !== "izquierda") direccion = "derecha";
+    }
+
+    function generarComida() {
+      const x = Math.floor(Math.random() * (canvas.width / TAM)) * TAM;
+      const y = Math.floor(Math.random() * (canvas.height / TAM)) * TAM;
+      return { x, y };
+    }
+
+    function dibujar() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      oruga.forEach((parte, i) => {
+        ctx.fillStyle = i === 0 ? "lime" : "green";
+        ctx.fillRect(parte.x, parte.y, TAM, TAM);
+      });
+      ctx.fillStyle = "red";
+      ctx.fillRect(comida.x, comida.y, TAM, TAM);
+    }
+
+    function mover() {
+      if (pausado) return;
+      const cabeza = { ...oruga[0] };
+      if (direccion === "arriba") cabeza.y -= TAM;
+      if (direccion === "abajo") cabeza.y += TAM;
+      if (direccion === "izquierda") cabeza.x -= TAM;
+      if (direccion === "derecha") cabeza.x += TAM;
+
+      if (
+        cabeza.x < 0 || cabeza.y < 0 ||
+        cabeza.x >= canvas.width || cabeza.y >= canvas.height ||
+        oruga.some(p => p.x === cabeza.x && p.y === cabeza.y)
+      ) {
+        if (user) {
+          db.ref("puntajes/" + user.uid).set({
+            nombre: user.displayName || user.email,
+            puntos: puntos,
+            nivel: nivel,
+            tiempo: Date.now()
+          });
+        }
+        alert("¡Perdiste! Nivel alcanzado: " + nivel);
+        reiniciar();
+        return;
+      }
+
+      oruga.unshift(cabeza);
+
+      if (cabeza.x === comida.x && cabeza.y === comida.y) {
+        comida = generarComida();
+        puntos++;
+        if (puntos % 5 === 0 && nivel < 10) {
+          nivel++;
+          velocidad = Math.max(50, velocidad - 15);
+          clearInterval(intervalo);
+          intervalo = setInterval(juego, velocidad);
+        }
+      } else {
+        oruga.pop();
+      }
+
+      info.textContent = `Nivel: ${nivel} | Manzanas comidas: ${puntos}`;
+      dibujar();
+    }
+
+    function reiniciar() {
+      oruga = [{ x: 100, y: 100 }];
+      direccion = "derecha";
+      comida = generarComida();
+      nivel = 1;
+      puntos = 0;
+      velocidad = 200;
+      pausado = false;
+      btnPausar.textContent = "Pausar";
+      clearInterval(intervalo);
+      intervalo = setInterval(juego, velocidad);
+    }
+
+    function juego() {
+      mover();
+    }
+
+    let intervalo = setInterval(juego, velocidad);
+  </script>
+</body>
+</html>
